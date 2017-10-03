@@ -55,7 +55,6 @@ int main(int argc, char const *argv[]) {
 	light.area << 1.0, 1.0;
 	light.normal = -light.point.normalized();
 	input = Pathtracing(input, eye, lens, light);
-	//std::cout << "input\n" << input << std::endl;
 
 	double* data = new double[input.cols()*input.rows()];
 	cv::Mat img(input.cols(), input.rows(), CV_64FC1, data);
@@ -64,7 +63,6 @@ int main(int argc, char const *argv[]) {
 			data[i * input.cols() + j] = input(input.cols() - i - 1, input.rows() - j);
 		}
 	}
-	//std::cout << "img\n" << img << std::endl;
 
 	cv::namedWindow("image", CV_WINDOW_AUTOSIZE | CV_WINDOW_FREERATIO);
 	cv::imshow("image", img);
@@ -110,7 +108,6 @@ MatrixXd Pathtracing(
 
 				double paxp = input.cols() * input.rows() / (eye.area.x() * eye.area.y());
 
-				/*レンズの一点をサンプリング*/
 				x0 = lens.point + ((k + point(mt)) / input.cols() - 0.5) * lens.area.x() * tangent
 					+ ((j + point(mt)) / input.rows() - 0.5) * lens.area.y() * binormal;
 				double pax0 = input.cols() * input.rows() / (lens.area.x() * lens.area.y());
@@ -118,15 +115,11 @@ MatrixXd Pathtracing(
 				ray.org = x0;
 				ray.dir = (x0 - xp).normalized();
 				double psigma = 1.0 / 2.0 * PI;
-				double alpha = 1.0;//ray.dir.dot(eye.normal) / pax0 * psigma;/*重みづけ未考慮*/
-								   //std::cout << "start" << std::endl;
+				double alpha = 1.0;
 
 
-				do {//ray をトレースして衝突がある
+				do {
 					tplane = (horizontal.point - ray.org).dot(horizontal.normal) / ray.dir.dot(horizontal.normal);
-					//if ((ray.org + tplane * ray.dir - horizontal.point).norm() > 5.0) {
-					//  tplane = -1.0;
-					//}
 					tlight = (light.point - ray.org).dot(light.normal) / ray.dir.dot(light.normal);
 					if ((ray.org + tlight * ray.dir - light.point).norm() > 10.0) {
 						tlight = -1.0;
@@ -143,7 +136,6 @@ MatrixXd Pathtracing(
 					else {
 						tsphere = (-B - sqrt(D)) / A;
 					}
-					//std::cout << tsphere << std::endl;
 
 					tplane = 1.0 / tplane;
 					tlight = 1.0 / tlight;
@@ -169,7 +161,6 @@ MatrixXd Pathtracing(
 					}
 					t = fmax(t, 0);
 
-					//std::cout <<  t << std::endl;
 					if (t <= 0) break;
 
 					x = ray.org + ray.dir / t;
@@ -184,11 +175,9 @@ MatrixXd Pathtracing(
 						break;
 					case 3:
 						input(j, k) = input(j, k) + alpha * Le(x, wo);
-						//std::cout << input(j, k) << std::endl;
 						break;
 					}
 					if (paramflag == 3) {
-						//std::cout << "end1" << std::endl;
 						break;
 					}
 					wi << point(mt), point(mt), point(mt);
@@ -204,7 +193,6 @@ MatrixXd Pathtracing(
 					double prr = 0.5;
 
 					if (point(mt) > prr) {
-						//std::cout << "end2" << std::endl;
 						break;
 					}
 					ray.org = x;
