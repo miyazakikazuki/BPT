@@ -1,13 +1,13 @@
 #ifndef SPHERE_HPP
 #define SPHERE_HPP
 #include<Material.hpp>
+#include<Ray.hpp>
 using namespace Eigen;
 
-class Sphere : public Material {
-private:
+struct Sphere : public Material {
 	Vector3d center;
 	double radius;
-public:
 	Sphere(Vector3d c, double r);
+	double calct(Ray r);
 };
 #endif SPHERE_HPP

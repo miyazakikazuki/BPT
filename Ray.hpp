@@ -10,15 +10,11 @@
 #include <Eigen/Core>
 using namespace Eigen;
 
-class Ray {
-private:
+struct Ray {
 	Vector3d pos;
 	Vector3d dir;
 	int count = 0;
 	int index;
-public:
 	Ray(Vector3d p, Vector3d d);
 };
-
-
 #endif RAY_HPP

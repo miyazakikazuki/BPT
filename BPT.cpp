@@ -9,30 +9,18 @@
 #include <opencv2/opencv.hpp>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <Plane.hpp>
+#include <Sphere.hpp>
+#include<Ray.hpp>
 using namespace Eigen;
 const int N = 100;
 
-struct line {
-	Vector3d org;
-	Vector3d dir;
-};
-
-struct plane {
-	Vector3d point;
-	Vector3d normal;
-	Vector2d area;
-};
-
-struct sphere {
-	Vector3d center;
-	double radius;
-};
 
 MatrixXd Pathtracing(
 	MatrixXd input,
-	struct plane eye,
-	struct plane lens,
-	struct plane light
+	class Plane eye,
+	class Plane lens,
+	class Plane light
 );
 
 double Le(Vector3d x, Vector3d wo);
@@ -44,17 +32,23 @@ double BSDF(Vector3d x, Vector3d wi, Vector3d wo);
 int main(int argc, char const *argv[]) {
 	/* code */
 	MatrixXd input = MatrixXd::Zero(200, 200);
-	struct plane eye, lens, light;
-	eye.point << 5.0, 0.0, 0.0;
-	eye.area << 0.1, 0.1;
-	eye.normal = -eye.point.normalized();
-	lens.point << 3.2, 0.0, 0.0;
-	lens.area << 1.0, 1.0;
-	lens.normal = -lens.point.normalized();
-	light.point << 0.0, 4.0, 3.0;
-	light.area << 1.0, 1.0;
-	light.normal = -light.point.normalized();
-	input = Pathtracing(input, eye, lens, light);
+	Plane *eye, *lens, *light;
+	Vector3d ep, en, lep, len, lip, lin;
+	Vector2d ea, lea, lia;
+	ep << 5.0, 0.0, 0.0;
+	ea << 0.1, 0.1;
+	en = -ep.normalized();
+	lep << 3.2, 0.0, 0.0;
+	lea << 1.0, 1.0;
+	len = -lep.normalized();
+	lip << 0.0, 4.0, 3.0;
+	lia << 1.0, 1.0;
+	lin = -lip.normalized();
+	eye = new Plane(ep, en, ea);
+	lens = new Plane(lep, len, lea);
+	light = new Plane(lip, lin, lia);
+	
+	input = Pathtracing(input, *eye, *lens, *light);
 
 	double* data = new double[input.cols()*input.rows()];
 	cv::Mat img(input.cols(), input.rows(), CV_64FC1, data);
@@ -72,9 +66,9 @@ int main(int argc, char const *argv[]) {
 
 MatrixXd Pathtracing(
 	MatrixXd input,
-	struct plane eye,
-	struct plane lens,
-	struct plane light)
+	Plane eye,
+	Plane lens,
+	Plane light)
 {
 	std::random_device rnd;
 	std::mt19937 mt(rnd());
@@ -86,13 +80,13 @@ MatrixXd Pathtracing(
 	tangent.y() = 0;
 	tangent.z() = -eye.normal.x() / sqrt(eye.normal.x() * eye.normal.x() + eye.normal.z() * eye.normal.z());
 	Vector3d binormal = eye.normal.cross(tangent);
-	struct line ray = { Vector3d::Zero(), Vector3d::Zero() };
+	Ray ray = { Vector3d::Zero(), Vector3d::Zero() };
 	//オブジェクトの設定
-	struct plane horizontal = { Vector3d::Zero(), Vector3d::Zero(),  Vector2d::Zero() };
+	Plane horizontal = { Vector3d::Zero(), Vector3d::Zero(),  Vector2d::Zero() };
 	horizontal.point << 0.0, -1.0, 0.0;
 	horizontal.normal << 0.0, 1.0, 0.0;
 	horizontal.area << 1.0, 1.0;
-	struct sphere unitsphere = { Vector3d::Zero(), 1.0 };
+	Sphere unitsphere = { Vector3d::Zero(), 1.0 };
 	double A, B, C, D;
 
 	Vector3d raynormal, wo, wi;
@@ -112,30 +106,15 @@ MatrixXd Pathtracing(
 					+ ((j + point(mt)) / input.rows() - 0.5) * lens.area.y() * binormal;
 				double pax0 = input.cols() * input.rows() / (lens.area.x() * lens.area.y());
 
-				ray.org = x0;
+				ray.pos = x0;
 				ray.dir = (x0 - xp).normalized();
 				double psigma = 1.0 / 2.0 * PI;
 				double alpha = 1.0;
 
-
 				do {
-					tplane = (horizontal.point - ray.org).dot(horizontal.normal) / ray.dir.dot(horizontal.normal);
-					tlight = (light.point - ray.org).dot(light.normal) / ray.dir.dot(light.normal);
-					if ((ray.org + tlight * ray.dir - light.point).norm() > 10.0) {
-						tlight = -1.0;
-					}
-
-					A = pow(ray.dir.norm(), 2);
-					B = ray.dir.dot(ray.org - unitsphere.center);
-					C = pow((ray.org - unitsphere.center).norm(), 2) - pow(unitsphere.radius, 2);
-					D = B * B - A * C;
-
-					if (D < 0) {
-						tsphere = -1.0;
-					}
-					else {
-						tsphere = (-B - sqrt(D)) / A;
-					}
+					tplane = horizontal.calct(ray);
+					tlight = light.calct(ray);
+					tsphere = unitsphere.calct(ray);
 
 					tplane = 1.0 / tplane;
 					tlight = 1.0 / tlight;
@@ -163,7 +142,7 @@ MatrixXd Pathtracing(
 
 					if (t <= 0) break;
 
-					x = ray.org + ray.dir / t;
+					x = ray.pos + ray.dir / t;
 					wo = -ray.dir;
 					switch (paramflag) {
 					case 0:
@@ -195,7 +174,7 @@ MatrixXd Pathtracing(
 					if (point(mt) > prr) {
 						break;
 					}
-					ray.org = x;
+					ray.pos = x;
 					ray.dir = wi;
 
 					alpha = alpha / prr;

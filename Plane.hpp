@@ -1,14 +1,14 @@
 #ifndef PLANE_HPP
 #define PLANE_HPP
 #include<Material.hpp>
+#include<Ray.hpp>
 using namespace Eigen;
 
-class Plane : public Material {
-private:
+struct Plane : public Material {
 	Vector3d point;
 	Vector3d normal;
 	Vector2d area;
-public:
 	Plane(Vector3d p, Vector3d n, Vector2d a);
+	double calct(Ray r);
 };
 #endif PLANE_HPP

@@ -8,6 +8,3 @@ Material::Material() {
 	count++;
 }
 
-double Material::calct(Ray r) {
-	return 0.0;
-}

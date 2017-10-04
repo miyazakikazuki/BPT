@@ -2,19 +2,23 @@
 #include <random>
 #include <opencv2/core/core.hpp>
 #include <opencv2/opencv.hpp>
-#include <Material.hpp>
 #include <Plane.hpp>
+#include <Sphere.hpp>
+#include<Ray.hpp>
 using namespace Eigen;
 
 int main() {
-	Vector3d p;
-	Vector3d n;
+	Vector3d p, n, pos;
 	Vector2d a;
 	p << 0.0, 0.0, 0.0;
 	n << 0.0, 1.0, 0.0;
 	a << 1.0, 1.0;
+	pos << 0.0, -3.0, 0.0;
 	Plane *pl = new Plane(p, n, a);
-	Plane *pl2 = new Plane(p, n, a);
+	Sphere *sph = new Sphere(p, 1.0);
+	Ray *r = new Ray(pos, n);
+	
+	std::cout << pl->calct(*r) <<sph->calct(*r) << std::endl;
 	
 	MatrixXd input = MatrixXd::Zero(200, 200);
 	double* data = new double[input.cols()*input.rows()];
